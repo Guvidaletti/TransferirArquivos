@@ -87,20 +87,29 @@ public class Sender extends Server {
       if (timeout != null && new GregorianCalendar().after(timeout)) {
         Console.println("======================================================");
         Console.log("Constatado TIMEOUT");
+        running = true;
+
         enviarPacote("TIMEOUT");
+
+        if (waiting) {
+          esperandoAck.release();
+          waiting = false;
+        }
+        return;
       }
 
       if (str.startsWith("HS")) {
         esperandoAck.release();
         timeout = new GregorianCalendar();
         timeout.add(Calendar.MINUTE, 2);
+//        timeout.add(Calendar.SECOND, 2);
       } else if (str.startsWith("ACK")) {
         String[] comandos = str.split(";");
         zonaDePerigo.acquire();
         acksRecebidos.add(comandos[1]);
         int atual = acksRecebidos.size() - 1;
         Console.println("======================================================");
-        Console.log("Verificando 3 últimos ACKs recebidos");
+        Console.log("ACK Recebido : " + comandos[1]);
         if (
           acksRecebidos.size() >= 3
             && acksRecebidos.get(atual).equals(acksRecebidos.get(atual - 1))
@@ -112,6 +121,7 @@ public class Sender extends Server {
         }
         if (waiting) {
           esperandoAck.release();
+          waiting = false;
         }
         zonaDePerigo.release();
       } else if (str.startsWith("ERROR")) {
@@ -152,16 +162,18 @@ public class Sender extends Server {
 
       Console.println("======================================================");
       Console.log("Slow Start começando!");
-      while (quantidadeDePacotes < tamanhoDaJanela && pacoteAtual < arquivoByteArray.length) {
+      while (running && quantidadeDePacotes < tamanhoDaJanela && pacoteAtual < arquivoByteArray.length) {
         for (int i = 0; i < quantidadeDePacotes && pacoteAtual < arquivoByteArray.length; i++) {
           separarEnviarProximoPacote();
         }
         verificarErros();
         quantidadeDePacotes = quantidadeDePacotes * 2;
       }
-      Console.println("======================================================");
-      Console.log("Congestion Avoidance começando!");
-      while (pacoteAtual < arquivoByteArray.length) {
+      if (running) {
+        Console.println("======================================================");
+        Console.log("Congestion Avoidance começando!");
+      }
+      while (running && pacoteAtual < arquivoByteArray.length) {
         for (int i = 0; i < quantidadeDePacotes && pacoteAtual < arquivoByteArray.length; i++) {
           separarEnviarProximoPacote();
         }

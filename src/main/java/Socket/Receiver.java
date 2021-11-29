@@ -13,8 +13,9 @@ import java.util.zip.CRC32;
 public class Receiver extends Server {
   private boolean running;
   public String nomeDoArquivo;
-  public List<String> sequenciasRecebidas = new ArrayList<>();
   private Map<Integer, byte[]> pacotesRecebidos = new TreeMap<>();
+  private List<Integer> ackFaltante = new ArrayList<>();
+  private int ultimoRecebido = 0;
 
   private void comandoRecebido(String str, int port, InetAddress address) throws Exception {
     String[] recebido = str.split(";");
@@ -45,9 +46,13 @@ public class Receiver extends Server {
           running = false;
         } else {
           Console.println("======================================================");
-          Console.log("A Sequência " + sequencia + " CRC Conferida!");
-          pacotesRecebidos.put(Integer.parseInt(sequencia), byteArr);
-          enviarPacote("ACK;" + sequencia, port);
+          Console.log("Sequência: " + sequencia + " - CRC Conferida!");
+          int seq = Integer.parseInt(sequencia);
+          if (seq - ultimoRecebido > 100) {
+            ackFaltante.add(seq);
+          }
+          pacotesRecebidos.put(seq, byteArr);
+          enviarPacote("ACK;" + seq, port);
         }
       }
       case "END" -> {
