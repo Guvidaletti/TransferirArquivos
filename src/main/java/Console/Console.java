@@ -5,6 +5,8 @@ import java.util.stream.Collectors;
 
 public class Console {
   public static boolean showDate = true;
+  public static boolean showLog = true;
+
   private static List<String> esperando = new ArrayList<>();
   private static Scanner scanner = new Scanner(System.in);
 
@@ -19,9 +21,12 @@ public class Console {
   public static final String ANSI_WHITE = "\u001B[37m";
 
   public static void log(Object... str) {
+    if (!showLog) return;
+
     if (esperando.size() > 0) {
       System.out.println("");
     }
+
     GregorianCalendar c = new GregorianCalendar();
     if (showDate) {
       System.out.print(ANSI_CYAN + "[");

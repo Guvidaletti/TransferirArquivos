@@ -5,6 +5,7 @@ import Console.Console;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
+import java.util.List;
 import java.util.concurrent.Semaphore;
 
 public class Server extends Thread {
@@ -26,17 +27,24 @@ public class Server extends Thread {
   }
 
   // Enviando
-  public static int tamanhoDaJanela = 6;
-  public static String[] arquivo;
+  public int tamanhoDaJanela = 6;
+  public List<String> arquivo;
+  public int sendingPort = -1;
 
+  public void enviarArquivo() {
+    Console.log("Recebendo arquivo");
+    byte[] bytearr = String.join("\n", arquivo).getBytes();
+
+    //TUDO DEUU CERTO KK
+    mainWaiting.release();
+  }
   // RECEBENDO
 
 
   @Override
   public void run() {
     if (tipo == TIPO.ENVIANDO) {
-//      byte[] bytearr = String.join("\n", arquivo).getBytes();
-      mainWaiting.release();
+      enviarArquivo();
     } else {
       try {
         Console.println("Esperando arquivo...");

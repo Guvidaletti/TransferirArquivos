@@ -2,6 +2,7 @@ import Arquivos.GerenciadorDeArquivos;
 import Console.Console;
 import Socket.Server;
 
+import java.io.FileNotFoundException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Semaphore;
@@ -30,12 +31,17 @@ public class main {
           Console.error("Opção inválida!");
         }
       }
-      String port = Console.askForString("Digite a porta para enviar: ");
       try {
+        server.arquivo = GerenciadorDeArquivos.readFile(listaDeArquivos.get(index));
+        Console.println("======================================================");
+        String port = Console.askForString("Digite a porta para enviar: ");
+        server.sendingPort = Integer.parseInt(port);
         server.start();
         server.mainWaiting.acquire();
       } catch (InterruptedException e) {
-        Console.error("Não foi possível manter a Thread Main");
+        Console.error("Não foi possível manter a Thread Main!");
+      } catch (FileNotFoundException fnf) {
+        Console.error("Arquivo não encontrado!");
       }
     } else {
       Console.println("Não há arquivos para serem enviados!");
@@ -59,7 +65,6 @@ public class main {
       System.out.println("0 - Sair");
       System.out.println("======================================================");
       op = Console.askForString("Digite sua opção: ");
-      System.out.println("======================================================");
       switch (op) {
         case "1" -> {
           enviarArquivo();
@@ -68,6 +73,7 @@ public class main {
           receberArquivo();
         }
         case "0" -> {
+          Console.println("======================================================");
           Console.println("Saíndo");
           Console.print("======================================================");
         }
