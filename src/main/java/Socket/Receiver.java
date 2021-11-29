@@ -34,7 +34,7 @@ public class Receiver extends Server {
   private void comandoRecebido(String str, int port, InetAddress address) throws Exception {
     String[] recebido = str.split(";");
     String comando = recebido[0];
-
+    Thread.sleep(400);
     switch (comando) {
       case "HS" -> {
         Console.println("======================================================");
@@ -43,7 +43,6 @@ public class Receiver extends Server {
         enviarPacote(comando, port);
       }
       case "PCK" -> {
-        Thread.sleep(700);
         String sequencia = recebido[1];
         byte[] byteArr = new byte[tamanhoPacote];
         String byteString = recebido[3].replaceAll("(\\[|]|\\s+)", "");
@@ -65,7 +64,8 @@ public class Receiver extends Server {
           pacotesRecebidos.put(seq, byteArr);
           ultimoRecebido = seq;
           if (temFaltante()) {
-            System.out.println("TEMM FALTANTE! " + qualPacoteFalta());
+            Console.println("======================================================");
+            Console.log("Está faltando o pacote: " + qualPacoteFalta());
             enviarPacote("ACK;" + qualPacoteFalta(), port);
           } else {
             enviarPacote("ACK;" + seq, port);

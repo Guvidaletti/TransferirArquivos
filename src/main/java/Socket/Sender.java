@@ -61,17 +61,18 @@ public class Sender extends Server {
     }
   }
 
-  private void reenviarPacote(int seq) throws IOException, InterruptedException {
+  private void reenviarPacote(int s) throws IOException, InterruptedException {
     byte[] paraContagem = new byte[tamanhoPacote];
-    List<Byte> paraEnvio = pacotesEnviados.get(seq);
+    List<Byte> paraEnvio = pacotesEnviados.get(s);
     if (paraEnvio == null) return;
     for (int i = 0; i < paraEnvio.size(); i++) {
       paraContagem[i] = paraEnvio.get(i);
     }
     CRC32 crc = new CRC32();
     crc.update(paraContagem);
-    Thread.sleep(700);
-    enviarPacote("PCK;" + seq + ";" + crc.getValue() + ";" + paraEnvio);
+    Console.println("======================================================");
+    Console.log("Reenviando o Pacote " + s);
+    enviarPacote("PCK;" + s + ";" + crc.getValue() + ";" + paraEnvio);
   }
 
   private void verificarErros() throws InterruptedException {
