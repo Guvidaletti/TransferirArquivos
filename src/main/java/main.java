@@ -1,17 +1,49 @@
+import Arquivos.GerenciadorDeArquivos;
 import Console.Console;
 import Socket.Server;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.Semaphore;
+import java.util.stream.Collectors;
+
 public class main {
-  private static Server server = new Server();
+  public static Semaphore semaphore = new Semaphore(0);
 
   public static void enviarArquivo() {
+    Server server = new Server();
     Server.tipo = Server.TIPO.ENVIANDO;
-    String port = Console.askForString("Digite a porta para enviar: ");
-    Console.log("TODO: CORE SENDER : ", port);
-    server.start();
+    List<String> listaDeArquivos = Arrays.stream(GerenciadorDeArquivos.listFilesToSend()).filter(f -> f.matches("^(.*)\\.txt$")).collect(Collectors.toList());
+    if (listaDeArquivos.size() > 0) {
+      String op = "";
+      int index = -1;
+      while (index < 0 || index > listaDeArquivos.size() - 1) {
+        Console.println("======================================================");
+        for (int i = 0; i < listaDeArquivos.size(); i++) {
+          Console.println(i + " - " + listaDeArquivos.get(i));
+        }
+        Console.println("======================================================");
+        op = Console.askForString("Digite sua opção: ");
+        index = Integer.parseInt(op);
+        if (index < 0 || index > listaDeArquivos.size() - 1) {
+          Console.println("======================================================");
+          Console.error("Opção inválida!");
+        }
+      }
+      String port = Console.askForString("Digite a porta para enviar: ");
+      try {
+        server.start();
+        server.mainWaiting.acquire();
+      } catch (InterruptedException e) {
+        Console.error("Não foi possível manter a Thread Main");
+      }
+    } else {
+      Console.println("Não há arquivos para serem enviados!");
+    }
   }
 
   public static void receberArquivo() {
+    Server server = new Server();
     Server.tipo = Server.TIPO.RECEBENDO;
     server.start();
   }
