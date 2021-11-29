@@ -17,6 +17,8 @@ public class main {
       int index = -1;
       while (index < 0 || index > listaDeArquivos.size() - 1) {
         Console.println("======================================================");
+        Console.println("========== Lista de arquivos Disponíveis =============");
+        Console.println("======================================================");
         for (int i = 0; i < listaDeArquivos.size(); i++) {
           Console.println(i + " - " + listaDeArquivos.get(i));
         }
@@ -58,7 +60,7 @@ public class main {
 
   public static void main(String[] args) {
     System.out.println("======================================================");
-    System.out.println("==Transferencia de Arquivos por Alessandro e Gustavo==");
+    System.out.println("= Transferencia de Arquivos por Alessandro e Gustavo =");
     String op = "";
     while (!op.equals("0")) {
       System.out.println("======================================================");
