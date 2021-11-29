@@ -4,14 +4,14 @@ import Console.Console;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
-import java.nio.charset.StandardCharsets;
+import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 
 public class Sender extends Server {
-
+  private boolean running;
   // Configurações da Conexão
   public String nomeDoArquivo;
   public List<String> arquivo;
@@ -26,20 +26,35 @@ public class Sender extends Server {
   private Calendar calendar;
 
   // Configurações de Envio
-  private Semaphore esperandoAck;
+  private Semaphore esperandoAck = new Semaphore(0);
   private List<Byte> bytesEnviados = new ArrayList<>();
 //  protected Semaphore zonaDePerigo;
 
+  protected void enviarPacote(String mensagem) throws IOException {
+    super.enviarPacote(mensagem, sendingPort);
+  }
+
   private class ACKReceiver extends Thread {
+    private void ackRecebido(String str) {
+      Console.println("======================================================");
+      Console.log("Ack recebido: " + str);
+
+      if (str.startsWith("HS")) {
+        esperandoAck.release();
+      }
+    }
+
     @Override
     public void run() {
       try {
-        DatagramPacket packet = new DatagramPacket(buf, buf.length);
-        socket.receive(packet);
-        String received = new String(packet.getData(), 0, packet.getLength()).trim();
-        System.out.println("RECEBI" + received);
-//        Core.comandoRecebido(received, packet.getPort(), packet.getAddress());
+        while (running) {
+          DatagramPacket packet = new DatagramPacket(buf, buf.length);
+          socket.receive(packet);
+          String received = new String(packet.getData(), 0, packet.getLength()).trim();
+          ackRecebido(received);
+        }
       } catch (IOException e) {
+        Console.println("======================================================");
         Console.log("Erro no ACKReceiver!");
       }
     }
@@ -48,21 +63,36 @@ public class Sender extends Server {
   @Override
   public void run() {
     try {
+      running = true;
       new ACKReceiver().start();
+      Console.println("======================================================");
       Console.log("Handshake");
-      String send = "HS;";
-      byte[] sendArr = send.getBytes();
-      DatagramPacket HandShake = new DatagramPacket(sendArr, sendArr.length, socket.getInetAddress(), sendingPort);
-      socket.send(HandShake);
-
+      enviarPacote("HS;" + nomeDoArquivo);
+      esperandoAck.acquire();
+      Console.println("======================================================");
+      Console.log("Conexão bem sucedida!");
+      Console.println("======================================================");
       Console.log("Slow Start começando!");
-      for (int i = 1; i < tamanhoDaJanela; i = i * 2) {
-
+      while (i < tamanhoDaJanela) {
+        
+        i = i * 2;
       }
+      Console.println("======================================================");
       Console.log("Congestion Avoidance começando!");
+//      while (false) {
+//
+//      }
+      Console.println("======================================================");
+      Console.log("Fechando conexão");
+      enviarPacote("END");
     } catch (IOException e) {
+      Console.println("======================================================");
       Console.error("Erro ao enviar arquivo");
+    } catch (InterruptedException interrupt) {
+      Console.println("======================================================");
+      Console.error("Thread Sender Interrompida");
     } finally {
+      running = false;
       mainWaiting.release();
     }
   }

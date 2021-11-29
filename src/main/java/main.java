@@ -2,17 +2,13 @@ import Arquivos.GerenciadorDeArquivos;
 import Console.Console;
 import Socket.Receiver;
 import Socket.Sender;
-import Socket.Server;
 
 import java.io.FileNotFoundException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.Semaphore;
 import java.util.stream.Collectors;
 
 public class main {
-  public static Semaphore semaphore = new Semaphore(0);
-
   public static void enviarArquivo() {
     Sender sender = new Sender();
     List<String> listaDeArquivos = Arrays.stream(GerenciadorDeArquivos.listFilesToSend()).filter(f -> f.matches("^(.*)\\.txt$")).collect(Collectors.toList());
