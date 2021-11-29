@@ -4,8 +4,7 @@ import Console.Console;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.Semaphore;
 import java.util.zip.CRC32;
 
@@ -16,7 +15,6 @@ public class Sender extends Server {
   public String nomeDoArquivo;
   public List<String> arquivo;
   private byte[] arquivoByteArray;
-//  private int pacotesNecessarios;
 
   // Configurações da Conexão
   public int sendingPort;
@@ -27,12 +25,11 @@ public class Sender extends Server {
   private int pacoteAtual = 0;
 
   // Configurações de timeout
-//  public int timeout = 1000 * 60; // 1 minuto
-//  private Calendar calendar;
+  private Calendar timeout;
 
   // Configurações de Envio
   private Semaphore esperandoAck = new Semaphore(0);
-  private List<Byte> bytesEnviados = new ArrayList<>();
+  private Map<Integer, List<Byte>> pacotesEnviados = new HashMap<>();
 
   // Configurações de Confirmação
   protected Semaphore zonaDePerigo = new Semaphore(1);
@@ -44,10 +41,10 @@ public class Sender extends Server {
   }
 
   private void separarEnviarProximoPacote() throws IOException, InterruptedException {
-    byte[] paraContagem = new byte[100];
-    List<Byte> paraEnvio = new ArrayList<>(100);
+    byte[] paraContagem = new byte[tamanhoPacote];
+    List<Byte> paraEnvio = new ArrayList<>(tamanhoPacote);
     int seq = pacoteAtual;
-    int limite = seq + 100;
+    int limite = seq + tamanhoPacote;
     int j = 0;
     while (pacoteAtual < limite && pacoteAtual < arquivoByteArray.length) {
       paraContagem[j] = arquivoByteArray[pacoteAtual];
@@ -57,9 +54,22 @@ public class Sender extends Server {
     }
     CRC32 crc = new CRC32();
     crc.update(paraContagem);
-    bytesEnviados.addAll(paraEnvio);
+    pacotesEnviados.put(seq, paraEnvio);
     enviarPacote("PCK;" + seq + ";" + crc.getValue() + ";" + paraEnvio);
-    Thread.sleep(500);
+    Thread.sleep(2000);
+  }
+
+  private void reenviarPacote(int seq) throws IOException, InterruptedException {
+    byte[] paraContagem = new byte[tamanhoPacote];
+    List<Byte> paraEnvio = pacotesEnviados.get(seq);
+    if (paraEnvio == null) return;
+    for (int i = 0; i < paraEnvio.size(); i++) {
+      paraContagem[i] = paraEnvio.get(i);
+    }
+    CRC32 crc = new CRC32();
+    crc.update(paraContagem);
+    enviarPacote("PCK;" + seq + ";" + crc.getValue() + ";" + paraEnvio);
+    Thread.sleep(2000);
   }
 
   private void verificarErros() throws InterruptedException {
@@ -67,31 +77,38 @@ public class Sender extends Server {
     ACKReceiver.waiting = true;
     zonaDePerigo.release();
     esperandoAck.acquire();
-    System.out.println("IAEEEEE");
-    // TODO: Verificar 3 ultimos ACKS recebidos
-    // TODO: Verificar timeout
   }
 
   private class ACKReceiver extends Thread {
     public static boolean waiting = false;
 
-    private void ackRecebido(String str) throws InterruptedException {
+    private void ackRecebido(String str) throws InterruptedException, IOException {
+      if (!running) return;
+      if (timeout != null && new GregorianCalendar().after(timeout)) {
+        Console.println("======================================================");
+        Console.log("Constatado TIMEOUT");
+        enviarPacote("TIMEOUT");
+      }
+
       if (str.startsWith("HS")) {
         esperandoAck.release();
+        timeout = new GregorianCalendar();
+        timeout.add(Calendar.MINUTE, 2);
       } else if (str.startsWith("ACK")) {
         String[] comandos = str.split(";");
         zonaDePerigo.acquire();
         acksRecebidos.add(comandos[1]);
         int atual = acksRecebidos.size() - 1;
+        Console.println("======================================================");
+        Console.log("Verificando 3 últimos ACKs recebidos");
         if (
           acksRecebidos.size() >= 3
             && acksRecebidos.get(atual).equals(acksRecebidos.get(atual - 1))
             && acksRecebidos.get(atual).equals(acksRecebidos.get(atual - 2))) {
-          //TODO: ERRO! &  verificar se precisa  do else ali pra baixo
           acksRecebidos.remove(atual);
           acksRecebidos.remove(atual - 1);
           acksRecebidos.remove(atual - 2);
-
+          reenviarPacote(atual);
         }
         if (waiting) {
           esperandoAck.release();

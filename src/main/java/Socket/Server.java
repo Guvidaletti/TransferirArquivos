@@ -8,6 +8,7 @@ public abstract class Server extends Thread {
   public static DatagramSocket socket;
   protected static InetAddress localhost;
   protected byte[] buf = new byte[999];
+  protected int tamanhoPacote = 100;
   public Semaphore mainWaiting = new Semaphore(0);
 
   static {

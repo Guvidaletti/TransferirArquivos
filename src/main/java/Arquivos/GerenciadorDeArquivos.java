@@ -22,12 +22,10 @@ public class GerenciadorDeArquivos {
     return f.mkdirs();
   }
 
-  private static void createFile(String fileName, String[] lines) throws IOException {
+  public static void createFile(String fileName, String lines) throws IOException {
     FileWriter arquivo = new FileWriter(getPathName("received") + "/" + fileName);
     PrintWriter gravarNoArquivo = new PrintWriter(arquivo);
-    for (String s : lines) {
-      gravarNoArquivo.println(s);
-    }
+    gravarNoArquivo.print(lines);
     arquivo.close();
   }
 
