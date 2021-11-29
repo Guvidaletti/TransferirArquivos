@@ -30,9 +30,15 @@ public class Console {
     GregorianCalendar c = new GregorianCalendar();
     if (showDate) {
       System.out.print(ANSI_CYAN + "[");
-      System.out.print(c.get(Calendar.HOUR_OF_DAY) + ":");
-      System.out.print(c.get(Calendar.MINUTE) + ":");
-      System.out.print(c.get(Calendar.SECOND));
+      int hour = c.get(Calendar.HOUR_OF_DAY);
+      if (hour < 10) System.out.print("0");
+      System.out.print(hour + ":");
+      int minute = c.get(Calendar.MINUTE);
+      if (minute < 10) System.out.print("0");
+      System.out.print(minute + ":");
+      int sec = c.get(Calendar.SECOND);
+      if (sec < 10) System.out.print("0");
+      System.out.print(sec);
       System.out.print("] : " + ANSI_RESET);
     }
     System.out.println(Arrays.stream(str).map(Object::toString).collect(Collectors.joining(" ")));
