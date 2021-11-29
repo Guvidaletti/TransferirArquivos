@@ -91,6 +91,8 @@ public class Sender extends Server {
         Console.println("======================================================");
         Console.log("Constatado TIMEOUT");
         running = true;
+        timeout = new GregorianCalendar();
+        timeout.add(Calendar.MINUTE, 1);
         pacoteAtual = 0;
         quantidadeDePacotes = 1;
         enviarPacote("TIMEOUT");
@@ -107,7 +109,7 @@ public class Sender extends Server {
         esperandoAck.release();
 
         timeout = new GregorianCalendar();
-        timeout.add(Calendar.MINUTE, 1);
+        timeout.add(Calendar.SECOND, 15);
 
       } else if (str.startsWith("ACK")) {
         String[] comandos = str.split(";");
