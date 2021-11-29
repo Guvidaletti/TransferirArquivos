@@ -1,5 +1,7 @@
 import Arquivos.GerenciadorDeArquivos;
 import Console.Console;
+import Socket.Receiver;
+import Socket.Sender;
 import Socket.Server;
 
 import java.io.FileNotFoundException;
@@ -12,8 +14,7 @@ public class main {
   public static Semaphore semaphore = new Semaphore(0);
 
   public static void enviarArquivo() {
-    Server server = new Server();
-    Server.tipo = Server.TIPO.ENVIANDO;
+    Sender sender = new Sender();
     List<String> listaDeArquivos = Arrays.stream(GerenciadorDeArquivos.listFilesToSend()).filter(f -> f.matches("^(.*)\\.txt$")).collect(Collectors.toList());
     if (listaDeArquivos.size() > 0) {
       String op = "";
@@ -32,26 +33,31 @@ public class main {
         }
       }
       try {
-        server.arquivo = GerenciadorDeArquivos.readFile(listaDeArquivos.get(index));
+        sender.nomeDoArquivo = listaDeArquivos.get(index);
+        sender.arquivo = GerenciadorDeArquivos.readFile(sender.nomeDoArquivo);
         Console.println("======================================================");
         String port = Console.askForString("Digite a porta para enviar: ");
-        server.sendingPort = Integer.parseInt(port);
-        server.start();
-        server.mainWaiting.acquire();
+        sender.sendingPort = Integer.parseInt(port);
+        sender.start();
+        sender.mainWaiting.acquire();
       } catch (InterruptedException e) {
-        Console.error("Não foi possível manter a Thread Main!");
+        Console.error("A Thread foi interrompida!");
       } catch (FileNotFoundException fnf) {
         Console.error("Arquivo não encontrado!");
       }
     } else {
-      Console.println("Não há arquivos para serem enviados!");
+      Console.error("Não há arquivos para serem enviados!");
     }
   }
 
   public static void receberArquivo() {
-    Server server = new Server();
-    Server.tipo = Server.TIPO.RECEBENDO;
-    server.start();
+    try {
+      Receiver receiver = new Receiver();
+      receiver.start();
+      receiver.mainWaiting.acquire();
+    } catch (InterruptedException e) {
+      Console.error("A Thread foi interrompida!");
+    }
   }
 
   public static void main(String[] args) {
