@@ -8,14 +8,28 @@ import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.Semaphore;
 import java.util.zip.CRC32;
 
 public class Receiver extends Server {
   private boolean running;
   public String nomeDoArquivo;
+  private Semaphore zonaDoPerigo = new Semaphore(1);
   private Map<Integer, byte[]> pacotesRecebidos = new TreeMap<>();
-  private List<Integer> ackFaltante = new ArrayList<>();
   private int ultimoRecebido = 0;
+
+  private boolean temFaltante() {
+    return pacotesRecebidos.values().size() < (100 + ultimoRecebido) / tamanhoPacote;
+  }
+
+  private int qualPacoteFalta() {
+    for (int i = 0; i < ultimoRecebido; i = i + 100) {
+      if (!pacotesRecebidos.containsKey(i)) {
+        return i;
+      }
+    }
+    return -1;
+  }
 
   private void comandoRecebido(String str, int port, InetAddress address) throws Exception {
     String[] recebido = str.split(";");
@@ -29,7 +43,7 @@ public class Receiver extends Server {
         enviarPacote(comando, port);
       }
       case "PCK" -> {
-        Thread.sleep(2000);
+        Thread.sleep(700);
         String sequencia = recebido[1];
         byte[] byteArr = new byte[tamanhoPacote];
         String byteString = recebido[3].replaceAll("(\\[|]|\\s+)", "");
@@ -48,11 +62,14 @@ public class Receiver extends Server {
           Console.println("======================================================");
           Console.log("Sequência: " + sequencia + " - CRC Conferida!");
           int seq = Integer.parseInt(sequencia);
-          if (seq - ultimoRecebido > 100) {
-            ackFaltante.add(seq);
-          }
           pacotesRecebidos.put(seq, byteArr);
-          enviarPacote("ACK;" + seq, port);
+          ultimoRecebido = seq;
+          if (temFaltante()) {
+            System.out.println("TEMM FALTANTE! " + qualPacoteFalta());
+            enviarPacote("ACK;" + qualPacoteFalta(), port);
+          } else {
+            enviarPacote("ACK;" + seq, port);
+          }
         }
       }
       case "END" -> {
@@ -76,7 +93,6 @@ public class Receiver extends Server {
       case "TIMEOUT" -> {
         Console.println("======================================================");
         Console.error("ERRO: TIMEOUT");
-        running = false;
       }
     }
   }
@@ -91,7 +107,7 @@ public class Receiver extends Server {
       Console.println("Esperando o arquivo...");
 
       String received = "";
-      while (running && !received.startsWith("END") && !received.startsWith("TIMEOUT")) {
+      while (running && !received.startsWith("END")) {
         DatagramPacket packet = new DatagramPacket(buf, buf.length);
         socket.receive(packet);
         received = new String(packet.getData(), 0, packet.getLength()).trim();

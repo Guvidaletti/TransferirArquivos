@@ -20,7 +20,7 @@ public class Sender extends Server {
   public int sendingPort;
 
   // Configurações de Congestionamento
-  public int tamanhoDaJanela = 4;
+  public int tamanhoDaJanela = 8;
   private int quantidadeDePacotes = 1;
   private int pacoteAtual = 0;
 
@@ -41,6 +41,7 @@ public class Sender extends Server {
   }
 
   private void separarEnviarProximoPacote() throws IOException, InterruptedException {
+    Thread.sleep(700);
     byte[] paraContagem = new byte[tamanhoPacote];
     List<Byte> paraEnvio = new ArrayList<>(tamanhoPacote);
     int seq = pacoteAtual;
@@ -55,8 +56,9 @@ public class Sender extends Server {
     CRC32 crc = new CRC32();
     crc.update(paraContagem);
     pacotesEnviados.put(seq, paraEnvio);
-    enviarPacote("PCK;" + seq + ";" + crc.getValue() + ";" + paraEnvio);
-    Thread.sleep(2000);
+    if (seq != 400) {
+      enviarPacote("PCK;" + seq + ";" + crc.getValue() + ";" + paraEnvio);
+    }
   }
 
   private void reenviarPacote(int seq) throws IOException, InterruptedException {
@@ -68,8 +70,8 @@ public class Sender extends Server {
     }
     CRC32 crc = new CRC32();
     crc.update(paraContagem);
+    Thread.sleep(700);
     enviarPacote("PCK;" + seq + ";" + crc.getValue() + ";" + paraEnvio);
-    Thread.sleep(2000);
   }
 
   private void verificarErros() throws InterruptedException {
@@ -88,7 +90,6 @@ public class Sender extends Server {
         Console.println("======================================================");
         Console.log("Constatado TIMEOUT");
         running = true;
-
         enviarPacote("TIMEOUT");
 
         if (waiting) {
@@ -101,24 +102,18 @@ public class Sender extends Server {
       if (str.startsWith("HS")) {
         esperandoAck.release();
         timeout = new GregorianCalendar();
-        timeout.add(Calendar.MINUTE, 2);
-//        timeout.add(Calendar.SECOND, 2);
+        timeout.add(Calendar.MINUTE, 1);
       } else if (str.startsWith("ACK")) {
         String[] comandos = str.split(";");
         zonaDePerigo.acquire();
+        int atual = acksRecebidos.size();
         acksRecebidos.add(comandos[1]);
-        int atual = acksRecebidos.size() - 1;
+        if (acksRecebidos.size() > 3 && acksRecebidos.get(atual).equals(acksRecebidos.get(atual - 1)) && acksRecebidos.get(atual).equals(acksRecebidos.get(atual - 2))) {
+          reenviarPacote(Integer.parseInt(acksRecebidos.get(atual)));
+        }
         Console.println("======================================================");
         Console.log("ACK Recebido : " + comandos[1]);
-        if (
-          acksRecebidos.size() >= 3
-            && acksRecebidos.get(atual).equals(acksRecebidos.get(atual - 1))
-            && acksRecebidos.get(atual).equals(acksRecebidos.get(atual - 2))) {
-          acksRecebidos.remove(atual);
-          acksRecebidos.remove(atual - 1);
-          acksRecebidos.remove(atual - 2);
-          reenviarPacote(atual);
-        }
+
         if (waiting) {
           esperandoAck.release();
           waiting = false;
@@ -196,18 +191,3 @@ public class Sender extends Server {
   }
 
 }
-//  Console.log("Recebendo arquivo");
-//  byte[] bytearr = String.join("\n", arquivo).getBytes();
-//  calendar = new GregorianCalendar();
-//    Console.log("Definindo Timeout!");
-//
-//
-////    CRC32 crc = new CRC32();
-////    crc.update(bytearr);
-//    Console.log("Começando Slow Start");
-//    for (int i = 0; i < tamanhoDaJanela; i = i * 2) {
-//
-//  }
-
-//  DatagramPacket packet = new DatagramPacket(byteArr, byteArr.length, address, port);
-//  Server.socket.send(packet);
