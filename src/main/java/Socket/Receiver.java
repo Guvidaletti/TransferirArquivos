@@ -3,11 +3,13 @@ package Socket;
 import Arquivos.GerenciadorDeArquivos;
 import Console.Console;
 
-import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.Semaphore;
 import java.util.zip.CRC32;
 
@@ -34,11 +36,13 @@ public class Receiver extends Server {
   private void comandoRecebido(String str, int port, InetAddress address) throws Exception {
     String[] recebido = str.split(";");
     String comando = recebido[0];
+
     Thread.sleep(400);
+
     switch (comando) {
       case "HS" -> {
         Console.println("======================================================");
-        Console.log("Conexão bem sucedida!");
+        Console.log("Conexao bem sucedida!");
         nomeDoArquivo = recebido[1].trim();
         enviarPacote(comando, port);
       }
@@ -59,7 +63,7 @@ public class Receiver extends Server {
           running = false;
         } else {
           Console.println("======================================================");
-          Console.log("Sequência: " + sequencia + " - CRC Conferida!");
+          Console.log("Sequencia: " + sequencia + " - CRC Conferida!");
           int seq = Integer.parseInt(sequencia);
           pacotesRecebidos.put(seq, byteArr);
           ultimoRecebido = seq;
@@ -92,6 +96,7 @@ public class Receiver extends Server {
       }
       case "TIMEOUT" -> {
         Console.println("======================================================");
+        pacotesRecebidos = new TreeMap<>();
         Console.error("ERRO: TIMEOUT");
       }
     }
@@ -114,7 +119,7 @@ public class Receiver extends Server {
         comandoRecebido(received, packet.getPort(), packet.getAddress());
       }
       Console.println("======================================================");
-      Console.log("Conexão Fechada!");
+      Console.log("Conexao Fechada!");
     } catch (Exception e) {
       Console.log("Erro no Receiver!");
     } finally {

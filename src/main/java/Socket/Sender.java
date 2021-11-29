@@ -56,12 +56,12 @@ public class Sender extends Server {
     CRC32 crc = new CRC32();
     crc.update(paraContagem);
     pacotesEnviados.put(seq, paraEnvio);
-    if (seq != 400) {
+    if (seq != 300) {
       enviarPacote("PCK;" + seq + ";" + crc.getValue() + ";" + paraEnvio);
     }
   }
 
-  private void reenviarPacote(int s) throws IOException, InterruptedException {
+  private void reenviarPacote(int s) throws IOException {
     byte[] paraContagem = new byte[tamanhoPacote];
     List<Byte> paraEnvio = pacotesEnviados.get(s);
     if (paraEnvio == null) return;
@@ -91,21 +91,27 @@ public class Sender extends Server {
         Console.println("======================================================");
         Console.log("Constatado TIMEOUT");
         running = true;
+        pacoteAtual = 0;
+        quantidadeDePacotes = 1;
         enviarPacote("TIMEOUT");
 
         if (waiting) {
           esperandoAck.release();
           waiting = false;
         }
+
         return;
       }
 
       if (str.startsWith("HS")) {
         esperandoAck.release();
+
         timeout = new GregorianCalendar();
         timeout.add(Calendar.MINUTE, 1);
+
       } else if (str.startsWith("ACK")) {
         String[] comandos = str.split(";");
+
         zonaDePerigo.acquire();
         int atual = acksRecebidos.size();
         acksRecebidos.add(comandos[1]);
@@ -122,7 +128,7 @@ public class Sender extends Server {
         zonaDePerigo.release();
       } else if (str.startsWith("ERROR")) {
         Console.println("======================================================");
-        Console.error("Erro de transmissão!");
+        Console.error("Erro de transmissao!");
       }
     }
 
@@ -152,32 +158,38 @@ public class Sender extends Server {
       enviarPacote("HS;" + nomeDoArquivo);
       esperandoAck.acquire();
       Console.println("======================================================");
-      Console.log("Conexão bem sucedida!");
+      Console.log("Conexao bem sucedida!");
 
       arquivoByteArray = String.join("\n", arquivo).getBytes();
 
       Console.println("======================================================");
       Console.log("Slow Start começando!");
       while (running && quantidadeDePacotes < tamanhoDaJanela && pacoteAtual < arquivoByteArray.length) {
+        Console.println("======================================================");
+        Console.log("Quantidade de pacotes = " + quantidadeDePacotes);
         for (int i = 0; i < quantidadeDePacotes && pacoteAtual < arquivoByteArray.length; i++) {
           separarEnviarProximoPacote();
         }
         verificarErros();
         quantidadeDePacotes = quantidadeDePacotes * 2;
       }
+
       if (running) {
         Console.println("======================================================");
-        Console.log("Congestion Avoidance começando!");
+        Console.log("Congestion Avoidance comecando!");
       }
       while (running && pacoteAtual < arquivoByteArray.length) {
+        Console.println("======================================================");
+        Console.log("Quantidade de pacotes = " + quantidadeDePacotes);
         for (int i = 0; i < quantidadeDePacotes && pacoteAtual < arquivoByteArray.length; i++) {
           separarEnviarProximoPacote();
         }
         verificarErros();
         quantidadeDePacotes++;
       }
+
       Console.println("======================================================");
-      Console.log("Fechando conexão");
+      Console.log("Fechando conexao");
       enviarPacote("END");
     } catch (IOException e) {
       Console.println("======================================================");
