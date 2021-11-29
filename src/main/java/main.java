@@ -21,11 +21,11 @@ public class main {
           Console.println(i + " - " + listaDeArquivos.get(i));
         }
         Console.println("======================================================");
-        op = Console.askForString("Digite sua opção: ");
+        op = Console.askForString("Digite sua opcao: ");
         index = Integer.parseInt(op);
         if (index < 0 || index > listaDeArquivos.size() - 1) {
           Console.println("======================================================");
-          Console.error("Opção inválida!");
+          Console.error("Opcao inválida!");
         }
       }
       try {
@@ -58,7 +58,7 @@ public class main {
 
   public static void main(String[] args) {
     System.out.println("======================================================");
-    System.out.println("==Transferência de Arquivos por Alessandro e Gustavo==");
+    System.out.println("==Transferencia de Arquivos por Alessandro e Gustavo==");
     String op = "";
     while (!op.equals("0")) {
       System.out.println("======================================================");
@@ -66,7 +66,7 @@ public class main {
       System.out.println("2 - Receber Arquivo");
       System.out.println("0 - Sair");
       System.out.println("======================================================");
-      op = Console.askForString("Digite sua opção: ");
+      op = Console.askForString("Digite sua opcao: ");
       switch (op) {
         case "1" -> {
           enviarArquivo();
@@ -76,11 +76,11 @@ public class main {
         }
         case "0" -> {
           Console.println("======================================================");
-          Console.println("Saíndo");
+          Console.println("Saindo");
           Console.print("======================================================");
         }
         default -> {
-          Console.error("Opção inválida");
+          Console.error("Opcao invalida");
         }
       }
     }
